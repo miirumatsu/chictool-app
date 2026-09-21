@@ -1,0 +1,50 @@
+{
+  "name": "chictool",
+  "version": "0.1.0",
+  "description": "CHICTool hardware inventory client using Electron, SQLite, and PowerShell remoting.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "db:check": "node scripts/check-db.js",
+    "dist": "electron-builder --win portable"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^38.1.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.cicto.chictool",
+    "productName": "CHICTool",
+    "icon": "assets/chictool-icon.ico",
+    "asar": true,
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "powershell",
+        "to": "powershell"
+      },
+      {
+        "from": "scripts/target-setup.ps1",
+        "to": "scripts/target-setup.ps1"
+      },
+      {
+        "from": "scripts/add-trusted-host.ps1",
+        "to": "scripts/add-trusted-host.ps1"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self';">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHICTool</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <section id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <h1>CHICTool</h1>
+      <p id="authMessage">Sign in to continue.</p>
+      <form id="authForm">
+        <label>Username<input id="authUsername" autocomplete="username" required></label>
+        <label>Password<input id="authPassword" type="password" autocomplete="current-password" required></label>
+        <button id="authSubmit" type="submit">Sign In</button>
+      </form>
+      <p id="authError" class="status error"></p>
+    </div>
+  </section>
+  <div id="appShell" hidden>
+  <header><div><h1><img class="brand-icon" src="../../assets/chictool-icon.png" alt="">CHICTool</h1><p>CICTO Hardware Inventory Capturing Tool</p><p id="appInfo" class="app-info"></p><p id="currentUser" class="current-user"></p></div><div class="header-actions"><div class="operation-group" role="group" aria-label="Account operations"><button id="addUser" type="button">Add User</button><button id="logout" type="button">Log Out</button></div><div class="operation-group" role="group" aria-label="Other operations"><button id="refresh">Refresh Inventory</button><button id="resetDatabase" type="button">Reset Inventory</button><button id="backupDatabase" type="button">Backup Database</button><button id="exportInventory" type="button">Export CSV</button><button id="showAudit" type="button">Audit Log</button></div><div class="operation-group" role="group" aria-label="Zoom controls"><button id="zoomOut" type="button" title="Zoom out">Z−</button><button id="resetZoom" type="button" title="Reset zoom">Z0</button><button id="zoomIn" type="button" title="Zoom in">Z+</button></div></div></header>
+  <main>
+    <section class="panel actions">
+      <h2>Capture Computer Information</h2>
+      <div class="row"><label>Mode<select id="mode"><option value="local">Local Computer</option><option value="remote">Remote Computer</option></select></label><label id="hostnameWrap" hidden>Hostname<input id="hostname" autocomplete="off"></label><label id="usernameWrap" hidden>Username<input id="username" autocomplete="username"></label><label id="passwordWrap" hidden>Password<input id="password" type="password" autocomplete="current-password"></label><div class="button-group"><button id="downloadSetup" type="button" hidden>Download Setup</button><button id="trustHost" type="button" hidden disabled>Trust Target</button><button id="testConnection" type="button" hidden>Ping</button><button id="collect">Capture</button></div></div>
+      <p id="status" class="status">Ready.</p>
+    </section>
+      <section class="panel"><h2>Review and Save</h2><div id="form" class="form-grid"></div><div class="button-group"><button id="save" disabled>Save</button><button id="clear" type="button">Clear</button></div><hr class="section-separator"><div class="review-inventory"><h2>Inventory</h2><div class="inventory-toolbar"><input id="search" placeholder="Search serial, hostname, model, or office"><select id="inventoryOfficeFilter"><option value="">All Offices</option></select><select id="inventoryTypeFilter"><option value="">All Device Types</option></select><span id="inventoryCount" class="record-count"></span></div><table id="inventoryTable"><thead><tr><th data-sort="serial_number">Serial</th><th data-sort="model">Manufacturer / Model</th><th data-sort="primary_user">Primary User / PAR Holder</th><th data-sort="office">Office</th><th>Updated By</th><th>Action</th></tr></thead><tbody id="records"></tbody></table><div class="pagination"><button id="previousPage" type="button" aria-label="Previous page" title="Previous page">‹</button><span id="pageStatus">Page 1 of 1</span><button id="nextPage" type="button" aria-label="Next page" title="Next page">›</button></div></div></section>
+    <section class="panel" id="peripheralPanel"><h2>Peripherals: <span id="peripheralComputer">All</span></h2><div class="peripheral-form"><label>Linked Computer<select id="peripheralComputerSelect"><option value="">Unlinked</option></select></label><label>Type *<select id="peripheralType"><option value="">Select type</option></select></label><label>Manufacturer<input id="peripheralManufacturer"></label><label>Model<input id="peripheralModel"></label><label>Serial Number<input id="peripheralSerial"></label><label>Asset Tag<input id="peripheralAssetTag"></label><label>Primary User<input id="peripheralUser"></label><label>Remarks<input id="peripheralRemarks"></label><div class="button-group peripheral-form-actions"><button id="addPeripheral" type="button">Add</button><button id="cancelPeripheralEdit" type="button" hidden>Cancel</button></div></div><hr class="section-separator"><div class="peripheral-toolbar"><input id="peripheralSearch" placeholder="Search serial, type, model, or user"><div class="peripheral-filters" role="group" aria-label="Peripheral view"><button id="showAllPeripherals" data-filter="all" type="button" aria-pressed="true">All</button><button id="showAssignedPeripherals" data-filter="assigned" type="button" aria-pressed="false">Linked</button><button id="showUnassignedPeripherals" data-filter="unassigned" type="button" aria-pressed="false">Unlinked</button></div><span id="peripheralCount" class="record-count"></span></div><table><thead><tr><th>Type</th><th>Manufacturer / Model</th><th>Serial Number</th><th>Asset Tag</th><th>Primary User</th><th>Action</th></tr></thead><tbody id="peripherals"></tbody></table><div class="pagination"><button id="previousPeripheralPage" type="button" aria-label="Previous page" title="Previous page">‹</button><span id="peripheralPageStatus">Page 1 of 1</span><button id="nextPeripheralPage" type="button" aria-label="Next page" title="Next page">›</button></div></section>
+  </main>
+  </div>
+  <dialog id="recordChoice">
+    <form method="dialog" class="choice-dialog">
+      <h2>Existing record found</h2>
+      <p id="recordChoiceMessage"></p>
+      <div class="choice-actions">
+        <button value="new">Load Captured</button>
+        <button value="saved">Load Saved</button>
+        <button value="cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="setupInstructions">
+    <form method="dialog" class="choice-dialog setup-dialog">
+      <h2>Run target setup</h2>
+      <div id="setupInstructionsText"></div>
+      <div class="choice-actions"><button value="close">Close</button></div>
+    </form>
+  </dialog>
+  <dialog id="auditDialog">
+    <form method="dialog" class="choice-dialog audit-dialog">
+      <h2>Audit Log</h2>
+      <div class="audit-table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Entity</th><th>Action</th><th>Details</th></tr></thead><tbody id="auditRecords"></tbody></table></div>
+      <div class="choice-actions"><button value="close">Close</button></div>
+    </form>
+  </dialog>
+  <dialog id="userDialog">
+    <form id="userForm" class="choice-dialog">
+      <h2>Register User</h2>
+      <p>Create an additional local CHICTool user.</p>
+      <label>Username<input id="newUsername" autocomplete="off" required></label>
+      <label>Password<input id="newPassword" type="password" autocomplete="new-password" required></label>
+      <label>Confirm Password<input id="confirmPassword" type="password" autocomplete="new-password" required></label>
+      <p id="userError" class="status error"></p>
+      <div class="choice-actions"><button id="cancelUser" type="button">Cancel</button><button type="submit">Register</button></div>
+    </form>
+  </dialog>
+  <script src="./renderer.js"></script>
+</body>
+</html>
