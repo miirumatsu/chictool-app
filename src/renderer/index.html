@@ -17,15 +17,17 @@
         <label>Password<input id="authPassword" type="password" autocomplete="current-password" required></label>
         <button id="authSubmit" type="submit">Sign In</button>
       </form>
+      <div class="auth-guide-divider" aria-hidden="true"></div>
+      <button id="showLoginGuide" class="login-guide-button" type="button">User Guide</button>
       <p id="authError" class="status error"></p>
     </div>
   </section>
   <div id="appShell" hidden>
-  <header><div><h1><img class="brand-icon" src="../../assets/chictool-icon.png" alt="">CHICTool</h1><p>CICTO Hardware Inventory Capturing Tool</p><p id="appInfo" class="app-info"></p><p id="currentUser" class="current-user"></p></div><div class="header-actions"><div class="operation-group" role="group" aria-label="Account operations"><button id="addUser" type="button">Add User</button><button id="logout" type="button">Log Out</button></div><div class="operation-group" role="group" aria-label="Other operations"><button id="refresh">Refresh Inventory</button><button id="resetDatabase" type="button">Reset Inventory</button><button id="backupDatabase" type="button">Backup Database</button><button id="exportInventory" type="button">Export CSV</button><button id="showAudit" type="button">Audit Log</button></div><div class="operation-group" role="group" aria-label="Zoom controls"><button id="zoomOut" type="button" title="Zoom out">Z−</button><button id="resetZoom" type="button" title="Reset zoom">Z0</button><button id="zoomIn" type="button" title="Zoom in">Z+</button></div></div></header>
+  <header><div><h1><img class="brand-icon" src="../../assets/chictool-icon.png" alt="">CHICTool</h1><p>CICTO Hardware Inventory Capturing Tool</p><p id="appInfo" class="app-info"></p><p id="currentUser" class="current-user"></p></div><div class="header-actions"><div class="operation-group" role="group" aria-label="Account operations"><button id="addUser" type="button">Add User</button><button id="logout" type="button">Log Out</button></div><div class="operation-group" role="group" aria-label="Other operations"><button id="showGuide" type="button">User Guide</button><button id="refresh">Refresh Inventory</button><button id="resetDatabase" type="button">Reset Inventory</button><button id="backupDatabase" type="button">Backup Database</button><button id="exportInventory" type="button">Export CSV</button><button id="showAudit" type="button">Audit Log</button></div><div class="operation-group" role="group" aria-label="Zoom controls"><button id="zoomOut" type="button" title="Zoom out">Z−</button><button id="resetZoom" type="button" title="Reset zoom">Z0</button><button id="zoomIn" type="button" title="Zoom in">Z+</button></div></div></header>
   <main>
     <section class="panel actions">
       <h2>Capture Computer Information</h2>
-      <div class="row"><label>Mode<select id="mode"><option value="local">Local Computer</option><option value="remote">Remote Computer</option></select></label><label id="hostnameWrap" hidden>Hostname<input id="hostname" autocomplete="off"></label><label id="usernameWrap" hidden>Username<input id="username" autocomplete="username"></label><label id="passwordWrap" hidden>Password<input id="password" type="password" autocomplete="current-password"></label><div class="button-group"><button id="downloadSetup" type="button" hidden>Download Setup</button><button id="trustHost" type="button" hidden disabled>Trust Target</button><button id="testConnection" type="button" hidden>Ping</button><button id="collect">Capture</button></div></div>
+      <div class="row"><label>Mode<select id="mode"><option value="local">Local Computer</option><option value="remote">Remote Computer</option></select></label><label id="hostnameWrap" hidden>Hostname / IP<input id="hostname" autocomplete="off" placeholder="PC-123 or 192.168.1.10"></label><label id="usernameWrap" hidden>Username<input id="username" autocomplete="username"></label><label id="passwordWrap" hidden>Password<input id="password" type="password" autocomplete="current-password"></label><div class="button-group"><button id="downloadSetup" type="button" hidden>Download Setup</button><button id="trustHost" type="button" hidden disabled>Trust Target</button><button id="testConnection" type="button" hidden>Ping</button><button id="collect">Capture</button></div></div>
       <p id="status" class="status">Ready.</p>
     </section>
       <section class="panel"><h2>Review and Save</h2><div id="form" class="form-grid"></div><div class="button-group"><button id="save" disabled>Save</button><button id="clear" type="button">Clear</button></div><hr class="section-separator"><div class="review-inventory"><h2>Inventory</h2><div class="inventory-toolbar"><input id="search" placeholder="Search serial, hostname, model, or office"><select id="inventoryOfficeFilter"><option value="">All Offices</option></select><select id="inventoryTypeFilter"><option value="">All Device Types</option></select><span id="inventoryCount" class="record-count"></span></div><table id="inventoryTable"><thead><tr><th data-sort="serial_number">Serial</th><th data-sort="model">Manufacturer / Model</th><th data-sort="primary_user">Primary User / PAR Holder</th><th data-sort="office">Office</th><th>Updated By</th><th>Action</th></tr></thead><tbody id="records"></tbody></table><div class="pagination"><button id="previousPage" type="button" aria-label="Previous page" title="Previous page">‹</button><span id="pageStatus">Page 1 of 1</span><button id="nextPage" type="button" aria-label="Next page" title="Next page">›</button></div></div></section>
@@ -49,6 +51,120 @@
       <div id="setupInstructionsText"></div>
       <div class="choice-actions"><button value="close">Close</button></div>
     </form>
+  </dialog>
+  <dialog id="guideDialog" aria-labelledby="guideTitle">
+    <div class="choice-dialog guide-dialog">
+      <div class="guide-heading"><div><h2 id="guideTitle">CHICTool User Guide</h2><p>Use this guide while capturing and maintaining hardware inventory.</p></div><button id="closeGuideTop" class="guide-close" type="button" aria-label="Close guide">×</button></div>
+      <div class="guide-content">
+        <section>
+          <h3>Getting started</h3>
+          <ol>
+            <li>Sign in with your local CHICTool account. On a new installation, the first sign-in creates the first local user.</li>
+            <li>Use <strong>Add User</strong> in the header to register another local user. The current signed-in user is shown beneath the app name and is recorded in inventory updates.</li>
+            <li>Start each device from the <strong>Capture Computer Information</strong> section. Captured data is loaded for review first; it is not stored until you select <strong>Save</strong>.</li>
+          </ol>
+        </section>
+        <section>
+          <h3>Capture controls at a glance</h3>
+          <div class="panel guide-ui" aria-label="Non-interactive illustration of the capture controls">
+            <h2>Capture Computer Information</h2>
+            <div class="row">
+              <label>Mode<select tabindex="-1" aria-label="Illustration mode"><option>Remote Computer</option></select></label>
+              <label>Hostname / IP<input value="PC-123 or 192.168.1.10" tabindex="-1" aria-label="Illustration hostname or IP"></label>
+              <label>Username<input value="DOMAIN\\user" tabindex="-1" aria-label="Illustration username"></label>
+              <label>Password<input value="••••••••" tabindex="-1" aria-label="Illustration password"></label>
+              <div class="button-group"><button type="button" tabindex="-1">Download Setup</button><button type="button" tabindex="-1">Trust Target</button><button type="button" tabindex="-1">Ping</button><button type="button" tabindex="-1">Capture</button></div>
+            </div>
+          </div>
+          <p class="guide-caption">This is a reference illustration only. Use the controls in the main app to capture information.</p>
+        </section>
+        <section>
+          <h3>Capture a local computer</h3>
+          <ol>
+            <li>Under <strong>Capture Computer Information</strong>, leave <strong>Mode</strong> set to <strong>Local Computer</strong>.</li>
+            <li>Select <strong>Capture</strong>. CHICTool reads the device information from the computer you are using.</li>
+            <li>Wait for the status message to confirm that collection is complete. The collected serial number, hardware details, and hostname appear in <strong>Review and Save</strong>.</li>
+            <li>Review the fields, complete the required values, then select <strong>Save</strong>.</li>
+          </ol>
+        </section>
+        <section>
+          <h3>Capture a remote computer</h3>
+          <div class="guide-subsection">
+            <h4>Before remote capture</h4>
+            <ol>
+              <li>Ensure the target computer is powered on, connected to the network, and reachable by its hostname or IP address.</li>
+              <li>Use an account that is permitted to connect to and collect information from the target computer.</li>
+              <li>For a target not yet prepared for CHICTool, select <strong>Download Setup</strong>. Copy the script to the target, open PowerShell as an administrator, and run the script there.</li>
+              <li>Return to CHICTool and select <strong>Trust Target</strong>. Administrator approval may be required because this updates the local computer's PowerShell trusted-host list.</li>
+            </ol>
+            <p class="guide-note">The setup script uses a temporary execution-policy bypass only. It does not permanently change the target's execution policy.</p>
+          </div>
+          <ol class="guide-main-steps">
+            <li>Choose <strong>Remote Computer</strong> from Mode. Enter the target hostname or IP address, username, and password.</li>
+            <li>Select <strong>Ping</strong> first to confirm the target can be reached. Correct the hostname/IP address, credentials, network connection, or target setup if the test fails.</li>
+            <li>Select <strong>Capture</strong> after Ping succeeds. The same review and save process applies to remote devices.</li>
+            <li>The hostname and username are remembered for convenience; enter or update credentials as needed before collection.</li>
+          </ol>
+        </section>
+        <section>
+          <h3>Review and save the record</h3>
+          <ol>
+            <li>Check the captured manufacturer, model, operating system, processor, storage, memory, GPU, MAC address, and hostname for accuracy.</li>
+            <li>Enter organization-specific information such as Acquired On, Office, PAR Holder, Primary User, Other Details, and Remarks.</li>
+            <li>Select a required <strong>Machine Type</strong> and <strong>Office</strong>. Required labels are marked with an asterisk.</li>
+            <li>The collected Serial Number and Other Details are read-only. Use Serial Override when an alternate inventory serial is necessary.</li>
+            <li>Use the ✦ button beside Model to remove non-alphanumeric characters from the beginning and end of the model value, when needed.</li>
+            <li>Select <strong>Save</strong> only after review. Select <strong>Clear</strong> to discard the currently loaded form without changing saved inventory.</li>
+          </ol>
+        </section>
+        <section>
+          <h3>When an existing serial number is found</h3>
+          <p>CHICTool asks which version to load. Select <strong>Load Captured</strong> to review newly collected hardware values alongside the existing record, or <strong>Load Saved</strong> to keep the stored values. Select <strong>Cancel</strong> if you do not want to change the form.</p>
+        </section>
+        <section>
+          <h3>Find and manage inventory</h3>
+          <ol>
+            <li>Use Search to find matching records by serial, hostname, model, office, or other saved text. Search also supports AND, OR, NOT, parentheses, and quoted phrases.</li>
+            <li>Narrow the list with the Office and Device Type filters. Select sortable column headings to change the inventory order.</li>
+            <li>Select <strong>Edit</strong> to load a saved device into the review form, make changes, then select <strong>Save</strong>.</li>
+            <li>Select <strong>Delete</strong> to remove a device from active inventory. The record is retained for audit and future synchronization; linked peripherals become unlinked rather than deleted.</li>
+          </ol>
+        </section>
+        <section>
+          <h3>Manage peripherals</h3>
+          <ol>
+            <li>Use the <strong>Peripherals</strong> section to add monitors, keyboards, mice, printers, and other equipment.</li>
+            <li>Select a Linked Computer to associate an item with a computer, or leave it as Unlinked. Choose a Type, then enter the available manufacturer, model, serial number, asset tag, user, and remarks.</li>
+            <li>Select <strong>Add</strong> to save the peripheral. Use the table's <strong>Edit</strong> action to revise an item or <strong>Delete</strong> to remove it from active inventory while retaining it for audit and synchronization.</li>
+            <li>Use All, Linked, and Unlinked plus the peripheral search field to change the current view.</li>
+          </ol>
+        </section>
+        <section>
+          <h3>Export, backup, and audit</h3>
+          <ol>
+            <li>Select <strong>Refresh Inventory</strong> to reload the inventory and lookup lists after changes.</li>
+            <li>Select <strong>Export CSV</strong> and choose a save location to create a spreadsheet-friendly inventory export.</li>
+            <li>Select <strong>Backup Database</strong> and choose a save location before major maintenance or as part of regular records protection.</li>
+            <li>Select <strong>Audit Log</strong> to view recorded actions and the user who performed them.</li>
+            <li><strong>Reset Inventory</strong> permanently removes computers, peripherals, collection logs, and audit logs, while retaining lookup values. Back up the database first and use this only when intended.</li>
+          </ol>
+        </section>
+        <section>
+          <h3>Common capture issues</h3>
+          <ul>
+            <li><strong>Remote Ping fails:</strong> confirm the hostname/IP address, network connection, credentials, and that the target is powered on.</li>
+            <li><strong>Remote capture fails after Ping:</strong> run the target setup script as administrator, then trust the target from CHICTool and try again.</li>
+            <li><strong>Save is unavailable:</strong> capture or load a record first, then ensure required fields such as Machine Type and Office are selected.</li>
+            <li><strong>Wrong values loaded:</strong> select Clear and capture again, or load the saved record using Edit from Inventory.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Good inventory practice</h3>
+          <p>Capture devices while they are connected to the expected network, verify the serial number against the physical label, consistently record the assigned user and office, and create a backup before a large batch of edits or a reset.</p>
+        </section>
+      </div>
+      <div class="choice-actions"><button id="closeGuide" type="button">Close Guide</button></div>
+    </div>
   </dialog>
   <dialog id="auditDialog">
     <form method="dialog" class="choice-dialog audit-dialog">

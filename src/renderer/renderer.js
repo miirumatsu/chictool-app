@@ -238,7 +238,12 @@ function editPeripheral(record) {
 }
 function renderPeripheralComputerOptions() {
   const selected = $('peripheralComputerSelect').value;
-  $('peripheralComputerSelect').innerHTML = `<option value="">Unlinked</option>${records.map(record => `<option value="${record.id}">${escapeHtml(record.serial_number)}${record.hostname ? ` — ${escapeHtml(record.hostname)}` : ''}</option>`).join('')}`;
+  $('peripheralComputerSelect').innerHTML = `<option value="">Unlinked</option>${records.map(record => {
+    const detail = [record.primary_user, record.par_holder, record.office]
+      .map(value => String(value || '').trim())
+      .find(Boolean);
+    return `<option value="${record.id}">${escapeHtml(record.serial_number)}${detail ? ` - ${escapeHtml(detail)}` : ''}</option>`;
+  }).join('')}`;
   if (records.some(record => String(record.id) === selected)) $('peripheralComputerSelect').value = selected;
 }
 async function loadPeripherals(computer, filter = peripheralFilter) {
@@ -315,6 +320,9 @@ $('mode').addEventListener('change', updateConnectionFields);
 $('hostname').addEventListener('input', updateConnectionFields);
 $('hostname').addEventListener('input', cacheRemoteIdentity);
 $('username').addEventListener('input', cacheRemoteIdentity);
+['showGuide', 'showLoginGuide'].forEach(id => $(id).addEventListener('click', () => $('guideDialog').showModal()));
+$('closeGuide').addEventListener('click', () => $('guideDialog').close());
+$('closeGuideTop').addEventListener('click', () => $('guideDialog').close());
 $('refresh').addEventListener('click', refresh);
 addEdgePaginationButtons();
 $('showAudit').addEventListener('click', async () => {
@@ -391,7 +399,7 @@ $('records').addEventListener('click', event => {
   const deleteButton = event.target.closest('.delete-record');
   if (!deleteButton) return;
   const record = records.find(item => String(item.id) === deleteButton.dataset.recordId);
-  if (!record || !window.confirm(`Delete inventory record ${record.serial_number}? Linked peripherals will become unlinked.`)) return;
+  if (!record || !window.confirm(`Remove inventory record ${record.serial_number} from active inventory? It will be retained for audit and synchronization. Linked peripherals will become unlinked.`)) return;
   window.pcinfo.deleteInventory(record.id).then(async () => {
     if (current && String(current.id) === String(record.id)) {
       current = null;
@@ -399,7 +407,7 @@ $('records').addEventListener('click', event => {
     }
     await refresh();
     await loadPeripherals(null, 'all');
-    setStatus('Inventory record deleted.');
+    setStatus('Inventory record removed from active inventory.');
   }).catch(error => setStatus(error.message, true));
 });
 $('showAllPeripherals').addEventListener('click', async () => {
@@ -451,10 +459,10 @@ $('peripherals').addEventListener('click', async event => {
   }
   const button = event.target.closest('.delete-peripheral');
   if (!button) return;
-  if (!window.confirm('Delete this peripheral entry?')) return;
+  if (!window.confirm('Remove this peripheral from active inventory? It will be retained for audit and synchronization.')) return;
   await window.pcinfo.deletePeripheral(button.dataset.peripheralId);
   await loadPeripherals(selectedComputer, peripheralFilter);
-  setStatus('Peripheral deleted.');
+  setStatus('Peripheral removed from active inventory.');
 });
 $('trustHost').addEventListener('click', async () => {
   try {

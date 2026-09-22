@@ -43,7 +43,9 @@ function initDatabase() {
       collected_on TEXT NOT NULL,
       script_version TEXT,
       created_by TEXT,
-      updated_by TEXT
+      updated_by TEXT,
+      deleted_at TEXT,
+      deleted_by TEXT
     );
     CREATE TABLE IF NOT EXISTS lookup_values (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,7 +73,9 @@ function initDatabase() {
       assigned_user TEXT,
       remarks TEXT,
       created_by TEXT,
-      updated_by TEXT
+      updated_by TEXT,
+      deleted_at TEXT,
+      deleted_by TEXT
     );
     CREATE TABLE IF NOT EXISTS collection_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -124,6 +128,14 @@ function migrateUserOwnership() {
   ensureColumn('computers', 'updated_by');
   ensureColumn('peripherals', 'created_by');
   ensureColumn('peripherals', 'updated_by');
+  ensureColumn('computers', 'deleted_at');
+  ensureColumn('computers', 'deleted_by');
+  ensureColumn('peripherals', 'deleted_at');
+  ensureColumn('peripherals', 'deleted_by');
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_computers_deleted_at ON computers(deleted_at);
+    CREATE INDEX IF NOT EXISTS idx_peripherals_deleted_at ON peripherals(deleted_at);
+  `);
 }
 
 function migratePeripheralLinking() {
@@ -320,7 +332,7 @@ function migrateLegacyCsv() {
 }
 
 function listComputers() {
-  return db.prepare('SELECT * FROM computers ORDER BY collected_on DESC').all();
+  return db.prepare('SELECT * FROM computers WHERE deleted_at IS NULL ORDER BY collected_on DESC').all();
 }
 
 function normalizeUsername(username) {
@@ -406,15 +418,15 @@ function listAuditLogs(limit = 200) {
 
 function listPeripherals(computerId, filter = 'all') {
   if (filter === 'all') {
-    return db.prepare('SELECT * FROM peripherals ORDER BY id').all();
+    return db.prepare('SELECT * FROM peripherals WHERE deleted_at IS NULL ORDER BY id').all();
   }
   if (filter === 'unassigned') {
-    return db.prepare('SELECT * FROM peripherals WHERE computer_id IS NULL ORDER BY id').all();
+    return db.prepare('SELECT * FROM peripherals WHERE deleted_at IS NULL AND computer_id IS NULL ORDER BY id').all();
   }
   if (computerId === null || typeof computerId === 'undefined') {
-    return db.prepare('SELECT * FROM peripherals WHERE computer_id IS NOT NULL ORDER BY id').all();
+    return db.prepare('SELECT * FROM peripherals WHERE deleted_at IS NULL AND computer_id IS NOT NULL ORDER BY id').all();
   }
-  return db.prepare('SELECT * FROM peripherals WHERE computer_id = ? ORDER BY id').all(computerId);
+  return db.prepare('SELECT * FROM peripherals WHERE deleted_at IS NULL AND computer_id = ? ORDER BY id').all(computerId);
 }
 
 function savePeripheral(input) {
@@ -435,24 +447,24 @@ function savePeripheral(input) {
   if (!db.prepare(`SELECT 1 FROM lookup_values WHERE source = 'peripheral_type' AND value = ? AND is_active = 1`).get(values.type)) {
     throw new Error(`Peripheral Type "${values.type}" is not an active lookup value.`);
   }
-  if (values.computer_id && !db.prepare('SELECT 1 FROM computers WHERE id = ?').get(values.computer_id)) {
+  if (values.computer_id && !db.prepare('SELECT 1 FROM computers WHERE id = ? AND deleted_at IS NULL').get(values.computer_id)) {
     throw new Error('The selected computer does not exist.');
   }
   const existingId = input.id ? Number(input.id) : null;
   if (values.asset_tag) {
     const duplicateAsset = db.prepare(`SELECT id FROM peripherals
-      WHERE lower(trim(asset_tag)) = lower(trim(?)) AND id <> ? LIMIT 1`).get(values.asset_tag, existingId || -1);
+      WHERE deleted_at IS NULL AND lower(trim(asset_tag)) = lower(trim(?)) AND id <> ? LIMIT 1`).get(values.asset_tag, existingId || -1);
     if (duplicateAsset) throw new Error(`Asset tag "${values.asset_tag}" is already used by another peripheral.`);
   }
   if (values.serial_number) {
     const duplicateSerial = db.prepare(`SELECT id FROM peripherals
-      WHERE lower(trim(serial_number)) = lower(trim(?)) AND id <> ? LIMIT 1`).get(values.serial_number, existingId || -1);
+      WHERE deleted_at IS NULL AND lower(trim(serial_number)) = lower(trim(?)) AND id <> ? LIMIT 1`).get(values.serial_number, existingId || -1);
     if (duplicateSerial) throw new Error(`Serial number "${values.serial_number}" is already used by another peripheral.`);
   }
   if (existingId) {
     db.prepare(`UPDATE peripherals SET computer_id=@computer_id, type=@type, manufacturer=@manufacturer,
       model=@model, serial_number=@serial_number, asset_tag=@asset_tag, assigned_user=@assigned_user,
-      remarks=@remarks, updated_by=@updated_by WHERE id=@id`).run({ ...values, id: existingId });
+      remarks=@remarks, updated_by=@updated_by, deleted_at=NULL, deleted_by=NULL WHERE id=@id`).run({ ...values, id: existingId });
     const updated = db.prepare('SELECT * FROM peripherals WHERE id = ?').get(existingId);
     if (!updated) throw new Error('Peripheral record was not found.');
     writeAudit('peripheral', existingId, 'update', updated);
@@ -467,24 +479,30 @@ function savePeripheral(input) {
 }
 
 function deletePeripheral(id) {
-  requireActiveUser();
+  const user = requireActiveUser();
   const recordId = Number(id);
-  const existing = db.prepare('SELECT * FROM peripherals WHERE id = ?').get(recordId);
+  const existing = db.prepare('SELECT * FROM peripherals WHERE id = ? AND deleted_at IS NULL').get(recordId);
   if (!existing) throw new Error('Peripheral record was not found.');
-  db.prepare('DELETE FROM peripherals WHERE id = ?').run(recordId);
-  writeAudit('peripheral', recordId, 'delete', existing);
+  const deletedAt = new Date().toISOString();
+  db.prepare('UPDATE peripherals SET deleted_at = ?, deleted_by = ?, updated_by = ? WHERE id = ?')
+    .run(deletedAt, user.username, user.username, recordId);
+  const deleted = db.prepare('SELECT * FROM peripherals WHERE id = ?').get(recordId);
+  writeAudit('peripheral', recordId, 'delete', deleted);
 }
 
 function deleteComputer(id) {
-  requireActiveUser();
+  const user = requireActiveUser();
   const recordId = Number(id);
-  const existing = db.prepare('SELECT * FROM computers WHERE id = ?').get(recordId);
+  const existing = db.prepare('SELECT * FROM computers WHERE id = ? AND deleted_at IS NULL').get(recordId);
   if (!existing) throw new Error('Inventory record was not found.');
   db.exec('BEGIN');
   try {
     db.prepare('UPDATE peripherals SET computer_id = NULL WHERE computer_id = ?').run(recordId);
-    db.prepare('DELETE FROM computers WHERE id = ?').run(recordId);
-    writeAudit('computer', recordId, 'delete', existing);
+    const deletedAt = new Date().toISOString();
+    db.prepare('UPDATE computers SET deleted_at = ?, deleted_by = ?, updated_by = ? WHERE id = ?')
+      .run(deletedAt, user.username, user.username, recordId);
+    const deleted = db.prepare('SELECT * FROM computers WHERE id = ?').get(recordId);
+    writeAudit('computer', recordId, 'delete', deleted);
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');
@@ -529,6 +547,9 @@ function saveComputer(input) {
   values.collected_on = values.collected_on || new Date().toISOString();
   values.created_by = user.username;
   values.updated_by = user.username;
+  values.deleted_at = null;
+  values.deleted_by = null;
+  columns.push('deleted_at', 'deleted_by');
   const existing = db.prepare('SELECT id FROM computers WHERE serial_number = ?').get(values.serial_number);
   const placeholders = columns.map(column => `@${column}`).join(', ');
   const updates = columns.filter(column => !['serial_number', 'created_by'].includes(column))
@@ -585,7 +606,7 @@ function csvValue(value) {
 function exportInventoryCsv(destination) {
   requireActiveUser();
   const columns = ['serial_number', 'serial_override', 'manufacturer', 'model', 'operating_system', 'processor', 'storage', 'memory', 'gpu', 'mac_address', 'details', 'hostname', 'username', 'machine_type', 'acquired_on', 'office', 'par_holder', 'primary_user', 'remarks', 'collected_on', 'script_version', 'created_by', 'updated_by'];
-  const rows = db.prepare(`SELECT ${columns.join(', ')} FROM computers ORDER BY collected_on DESC`).all();
+  const rows = db.prepare(`SELECT ${columns.join(', ')} FROM computers WHERE deleted_at IS NULL ORDER BY collected_on DESC`).all();
   const csv = [columns.join(','), ...rows.map(row => columns.map(column => csvValue(row[column])).join(','))].join('\r\n') + '\r\n';
   fs.writeFileSync(destination, csv, 'utf8');
   writeAudit('database', null, 'export-csv', { destination, count: rows.length });
