@@ -574,15 +574,15 @@ function listAuditLogs(limit = 200) {
 
 function listPeripherals(computerId, filter = "all") {
     if (filter === "all") {
-        return db.prepare("SELECT * FROM peripherals WHERE deletedAt IS NULL ORDER BY id").all();
+        return db.prepare("SELECT * FROM peripherals WHERE deletedAt IS NULL ORDER BY id DESC").all();
     }
     if (filter === "unassigned") {
         return db.prepare("SELECT * FROM peripherals WHERE deletedAt IS NULL AND computerId IS NULL ORDER BY id").all();
     }
     if (computerId === null || typeof computerId === "undefined") {
-        return db.prepare("SELECT * FROM peripherals WHERE deletedAt IS NULL AND computerId IS NOT NULL ORDER BY id").all();
+        return db.prepare("SELECT * FROM peripherals WHERE deletedAt IS NULL AND computerId IS NOT NULL ORDER BY id DESC").all();
     }
-    return db.prepare("SELECT * FROM peripherals WHERE deletedAt IS NULL AND computerId = ? ORDER BY id").all(computerId);
+    return db.prepare("SELECT * FROM peripherals WHERE deletedAt IS NULL AND computerId = ? ORDER BY id DESC").all(computerId);
 }
 
 function listPeripheralsForSync() {
